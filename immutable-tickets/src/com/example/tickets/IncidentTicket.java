@@ -6,68 +6,51 @@ import java.util.List;
 /**
  * INTENTION: A ticket should be an immutable record-like object.
  *
- * CURRENT STATE (BROKEN ON PURPOSE):
- * - mutable fields
- * - multiple constructors
- * - public setters
- * - tags list can be modified from outside
- * - validation is scattered elsewhere
- *
- * TODO (student): refactor to immutable + Builder.
+ * Implementation uses a builder and exposes no setters.  The internal list
+ * of tags is kept unmodifiable and all fields are final.
  */
-public class IncidentTicket {
+public final class IncidentTicket {
 
-    private String id;
-    private String reporterEmail;
-    private String title;
+    private final String id;
+    private final String reporterEmail;
+    private final String title;
 
-    private String description;
-    private String priority;       // LOW, MEDIUM, HIGH, CRITICAL
-    private List<String> tags;     // mutable leak
-    private String assigneeEmail;
-    private boolean customerVisible;
-    private Integer slaMinutes;    // optional
-    private String source;         // e.g. "CLI", "WEBHOOK", "EMAIL"
+    private final String description;
+    private final String priority;       // LOW, MEDIUM, HIGH, CRITICAL
+    private final java.util.List<String> tags;     // immutable copy
+    private final String assigneeEmail;
+    private final boolean customerVisible;
+    private final Integer slaMinutes;    // optional
+    private final String source;         // e.g. "CLI", "WEBHOOK", "EMAIL"
 
-    public IncidentTicket() {
-        this.tags = new ArrayList<>();
+    private IncidentTicket(Builder b) {
+        this.id = b.id;
+        this.reporterEmail = b.reporterEmail;
+        this.title = b.title;
+        this.description = b.description;
+        this.priority = b.priority;
+        this.tags = java.util.Collections.unmodifiableList(new java.util.ArrayList<>(b.tags));
+        this.assigneeEmail = b.assigneeEmail;
+        this.customerVisible = b.customerVisible;
+        this.slaMinutes = b.slaMinutes;
+        this.source = b.source;
     }
 
-    public IncidentTicket(String id, String reporterEmail, String title) {
-        this();
-        this.id = id;
-        this.reporterEmail = reporterEmail;
-        this.title = title;
+    public Builder toBuilder() {
+        return new Builder(this);
     }
 
-    public IncidentTicket(String id, String reporterEmail, String title, String priority) {
-        this(id, reporterEmail, title);
-        this.priority = priority;
-    }
-
-    // Getters
+    // getters
     public String getId() { return id; }
     public String getReporterEmail() { return reporterEmail; }
     public String getTitle() { return title; }
     public String getDescription() { return description; }
     public String getPriority() { return priority; }
-    public List<String> getTags() { return tags; } // BROKEN: leaks internal list
+    public java.util.List<String> getTags() { return tags; }
     public String getAssigneeEmail() { return assigneeEmail; }
     public boolean isCustomerVisible() { return customerVisible; }
     public Integer getSlaMinutes() { return slaMinutes; }
     public String getSource() { return source; }
-
-    // Setters (BROKEN: should not exist after refactor)
-    public void setId(String id) { this.id = id; }
-    public void setReporterEmail(String reporterEmail) { this.reporterEmail = reporterEmail; }
-    public void setTitle(String title) { this.title = title; }
-    public void setDescription(String description) { this.description = description; }
-    public void setPriority(String priority) { this.priority = priority; }
-    public void setTags(List<String> tags) { this.tags = tags; } // BROKEN: retains external reference
-    public void setAssigneeEmail(String assigneeEmail) { this.assigneeEmail = assigneeEmail; }
-    public void setCustomerVisible(boolean customerVisible) { this.customerVisible = customerVisible; }
-    public void setSlaMinutes(Integer slaMinutes) { this.slaMinutes = slaMinutes; }
-    public void setSource(String source) { this.source = source; }
 
     @Override
     public String toString() {
@@ -83,5 +66,52 @@ public class IncidentTicket {
                 ", slaMinutes=" + slaMinutes +
                 ", source='" + source + '\'' +
                 '}';
+    }
+
+    public static class Builder {
+        private String id;
+        private String reporterEmail;
+        private String title;
+
+        private String description = "";
+        private String priority;
+        private java.util.List<String> tags = new java.util.ArrayList<>();
+        private String assigneeEmail = "";
+        private boolean customerVisible;
+        private Integer slaMinutes;
+        private String source = "";
+
+        public Builder(String id, String reporterEmail, String title) {
+            this.id = id;
+            this.reporterEmail = reporterEmail;
+            this.title = title;
+        }
+
+        private Builder(IncidentTicket t) {
+            this.id = t.id;
+            this.reporterEmail = t.reporterEmail;
+            this.title = t.title;
+            this.description = t.description;
+            this.priority = t.priority;
+            this.tags = new java.util.ArrayList<>(t.tags);
+            this.assigneeEmail = t.assigneeEmail;
+            this.customerVisible = t.customerVisible;
+            this.slaMinutes = t.slaMinutes;
+            this.source = t.source;
+        }
+
+        public Builder description(String d) { this.description = d; return this; }
+        public Builder priority(String p) { this.priority = p; return this; }
+        public Builder addTag(String tag) { this.tags.add(tag); return this; }
+        public Builder tags(java.util.List<String> list) { this.tags = new java.util.ArrayList<>(list); return this; }
+        public Builder assigneeEmail(String a) { this.assigneeEmail = a; return this; }
+        public Builder customerVisible(boolean v) { this.customerVisible = v; return this; }
+        public Builder slaMinutes(Integer m) { this.slaMinutes = m; return this; }
+        public Builder source(String s) { this.source = s; return this; }
+
+        public IncidentTicket build() {
+            // basic validation could be added here
+            return new IncidentTicket(this);
+        }
     }
 }

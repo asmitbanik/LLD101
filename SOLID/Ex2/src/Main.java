@@ -4,7 +4,12 @@ public class Main {
     public static void main(String[] args) {
         System.out.println("=== Cafeteria Billing ===");
 
-        CafeteriaSystem sys = new CafeteriaSystem();
+        TaxPolicy tax = new TaxRules();
+        DiscountPolicy disc = new DiscountRules();
+        InvoiceFormatter fmt = new PlainInvoiceFormatter();
+        InvoiceRepository repo = new FileStore();
+
+        CafeteriaSystem sys = new CafeteriaSystem(tax, disc, fmt, repo);
         sys.addToMenu(new MenuItem("M1", "Veg Thali", 80.00));
         sys.addToMenu(new MenuItem("C1", "Coffee", 30.00));
         sys.addToMenu(new MenuItem("S1", "Sandwich", 60.00));
@@ -14,6 +19,8 @@ public class Main {
                 new OrderLine("C1", 1)
         );
 
-        sys.checkout("student", order);
+        CheckoutResult res = sys.checkout("student", order);
+        System.out.print(res.text);
+        System.out.println("Saved invoice: " + res.invoiceId + " (lines=" + res.savedLines + ")");
     }
 }

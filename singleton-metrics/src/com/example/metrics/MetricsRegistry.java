@@ -15,30 +15,33 @@ import java.util.Map;
  * - Reflection can call the constructor to create more instances.
  * - Serialization can create a new instance when deserialized.
  *
- * TODO (student):
- *  1) Make it a proper lazy, thread-safe singleton (private ctor)
- *  2) Block reflection-based multiple construction
- *  3) Preserve singleton on serialization (readResolve)
+ * Implementation is now a thread-safe lazy singleton with reflection/serialization
+ * safeguards.
  */
 public class MetricsRegistry implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private static MetricsRegistry INSTANCE; // BROKEN: not volatile, not thread-safe
+    // flag used to block reflection-based instantiation
+    private static volatile boolean created = false;
     private final Map<String, Long> counters = new HashMap<>();
 
-    // BROKEN: should be private and should prevent second construction
-    public MetricsRegistry() {
-        // intentionally empty
+    // private constructor; throws if called more than once (reflection guard)
+    private MetricsRegistry() {
+        if (created) {
+            throw new IllegalStateException("MetricsRegistry instance already created");
+        }
+        created = true;
     }
 
-    // BROKEN: racy lazy init; two threads can create two instances
+    // lazy-loaded holder idiom ensures thread-safe lazy initialization
+    private static class Holder {
+        private static final MetricsRegistry INSTANCE = new MetricsRegistry();
+    }
+
     public static MetricsRegistry getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new MetricsRegistry();
-        }
-        return INSTANCE;
+        return Holder.INSTANCE;
     }
 
     public synchronized void setCount(String key, long value) {
@@ -57,5 +60,8 @@ public class MetricsRegistry implements Serializable {
         return Collections.unmodifiableMap(new HashMap<>(counters));
     }
 
-    // TODO: implement readResolve() to preserve singleton on deserialization
+    // preserve singleton during deserialization
+    private Object readResolve() {
+        return getInstance();
+    }
 }
