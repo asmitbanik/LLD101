@@ -10,11 +10,8 @@ import java.util.Random;
  * CURRENT STATE (BROKEN ON PURPOSE):
  * - Creates new MarkerStyle per MapMarker via MapMarker constructor.
  *
- * TODO (student):
- * - After introducing MarkerStyleFactory, refactor so identical styles are shared.
- * - Suggested approach:
- *   1) Change MapMarker to accept MarkerStyle directly
- *   2) Use MarkerStyleFactory.get(shape,color,size,filled) here
+ * Implementation now delegates style creation to MarkerStyleFactory,
+ * guaranteeing that identical style configurations are shared across markers.
  */
 public class MapDataSource {
 
@@ -26,6 +23,7 @@ public class MapDataSource {
         Random rnd = new Random(7);
         List<MapMarker> out = new ArrayList<>(count);
 
+        MarkerStyleFactory styleFactory = new MarkerStyleFactory();
         for (int i = 0; i < count; i++) {
             double lat = 12.9000 + rnd.nextDouble() * 0.2000;
             double lng = 77.5000 + rnd.nextDouble() * 0.2000;
@@ -37,7 +35,8 @@ public class MapDataSource {
             int size = SIZES[rnd.nextInt(SIZES.length)];
             boolean filled = rnd.nextBoolean();
 
-            out.add(new MapMarker(lat, lng, label, shape, color, size, filled));
+            MarkerStyle style = styleFactory.get(shape, color, size, filled);
+            out.add(new MapMarker(lat, lng, label, style));
         }
         return out;
     }
